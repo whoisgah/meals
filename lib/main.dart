@@ -7,6 +7,7 @@ import 'utils/app_routes.dart';
 import 'screens/settings_screen.dart';
 import 'models/meal.dart';
 import 'data/dummy_data.dart';
+import 'models/settings.dart';
 
 void main() {
   runApp(const MyApp());
@@ -20,8 +21,34 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-
+  Settings settings = Settings();
   List<Meal> _availableMeals = dummyMeals;
+  List<Meal> _favoriteMeals = [];
+
+  void _filterMeals(Settings settings) {
+    setState(() {
+      this.settings = settings;
+
+      _availableMeals = dummyMeals.where((meal) {
+        final filterGluten = settings.isGlutenFree && !meal.isGlutenFree;
+        final filterLactose = settings.isLactoseFree && !meal.isLactoseFree;
+        final filterVegan = settings.isVegan && !meal.isVegan;
+        final filterVegetarian = settings.isVegetarian && !meal.isVegetarian;
+        return !filterGluten &&
+            !filterLactose &&
+            !filterVegan &&
+            !filterVegetarian;
+      }).toList();
+    });
+  }
+
+  _toggleFavorite(Meal meal) {
+    setState(() {
+      _favoriteMeals.contains(meal)
+          ? _favoriteMeals.remove(meal)
+          : _favoriteMeals.add(meal);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,10 +73,11 @@ class _MyAppState extends State<MyApp> {
             ),
       ),
       routes: {
-        AppRoutes.home: (ctx) => const TabsScreen(),
-        AppRoutes.categoriesMeals: (ctx) => CategoriesMealsScreen(_availableMeals),
-        AppRoutes.mealDetail: (ctx) => const MealDetailScreen(),
-        AppRoutes.settings: (ctx) => const SettingsScreen(),
+        AppRoutes.home: (ctx) => TabsScreen(_favoriteMeals),
+        AppRoutes.categoriesMeals: (ctx) =>
+            CategoriesMealsScreen(_availableMeals),
+        AppRoutes.mealDetail: (ctx) => MealDetailScreen(_toggleFavorite),
+        AppRoutes.settings: (ctx) => SettingsScreen(settings, _filterMeals),
       },
     );
   }
